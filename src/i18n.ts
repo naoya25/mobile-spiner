@@ -13,6 +13,7 @@ export const resources = {
       },
       controls: {
         settings: '設定',
+        back: '戻る',
         close: '閉じる',
         theme: 'テーマ',
         sensitivity: '感度',
@@ -42,6 +43,7 @@ export const resources = {
       },
       controls: {
         settings: 'Settings',
+        back: 'Back',
         close: 'Close',
         theme: 'Theme',
         sensitivity: 'Sensitivity',
