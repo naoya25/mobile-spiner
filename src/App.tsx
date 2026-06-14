@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { SpinnerScene } from './components/SpinnerScene';
 import { type ThemeMode, useThemeMode } from './hooks/useThemeMode';
 import { useTwoFingerSpin } from './hooks/useTwoFingerSpin';
+import { type SpinnerVariant, spinnerVariants } from './spinnerVariants';
 
 const themeModes: ThemeMode[] = ['system', 'light', 'dark'];
 const defaultSensitivity = 1;
 const defaultDecay = 1.35;
 const defaultSpinnerSize = 1;
+const defaultSpinnerVariant: SpinnerVariant = 'classic';
 
 type Route = 'spinner' | 'settings';
 
@@ -22,6 +24,7 @@ export function App() {
   const [sensitivity, setSensitivity] = useState(defaultSensitivity);
   const [decay, setDecay] = useState(defaultDecay);
   const [spinnerSize, setSpinnerSize] = useState(defaultSpinnerSize);
+  const [spinnerVariant, setSpinnerVariant] = useState<SpinnerVariant>(defaultSpinnerVariant);
   const spin = useTwoFingerSpin({ sensitivity });
   const [route, setRoute] = useState<Route>(() => getRoute());
 
@@ -67,6 +70,29 @@ export function App() {
                   onClick={() => setThemeMode(mode)}
                 >
                   {t(`controls.${mode}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="field-label">{t('controls.spinner')}</p>
+            <div className="variant-grid" role="group" aria-label={t('controls.spinner')}>
+              {spinnerVariants.map((variant) => (
+                <button
+                  key={variant}
+                  className={variant === spinnerVariant ? 'variant-card is-active' : 'variant-card'}
+                  type="button"
+                  aria-pressed={variant === spinnerVariant}
+                  onClick={() => setSpinnerVariant(variant)}
+                >
+                  <span className={`variant-preview variant-preview-${variant}`} aria-hidden="true">
+                    <span />
+                  </span>
+                  <span className="variant-copy">
+                    <strong>{t(`variants.${variant}.name`)}</strong>
+                    <small>{t(`variants.${variant}.description`)}</small>
+                  </span>
                 </button>
               ))}
             </div>
@@ -138,6 +164,7 @@ export function App() {
           anchorPosition={spin.anchorPosition}
           activeTouchCount={spin.activeTouchCount}
           spinnerSize={spinnerSize}
+          spinnerVariant={spinnerVariant}
         />
       </section>
 

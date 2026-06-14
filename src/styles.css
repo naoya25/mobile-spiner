@@ -150,7 +150,8 @@ button {
 
 .settings-button:focus-visible,
 .icon-button:focus-visible,
-.theme-switcher button:focus-visible {
+.theme-switcher button:focus-visible,
+.variant-card:focus-visible {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
 }
@@ -270,6 +271,165 @@ button {
   color: var(--text);
   background: var(--surface-strong);
   box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.variant-card {
+  display: grid;
+  min-height: 116px;
+  grid-template-rows: 1fr auto;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  background: oklch(100% 0 0 / 34%);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease,
+    box-shadow 180ms var(--ease-out-quart),
+    transform 180ms var(--ease-out-quart);
+}
+
+:root[data-theme='dark'] .variant-card {
+  background: oklch(100% 0 0 / 5%);
+}
+
+.variant-card:hover {
+  background: var(--surface-strong);
+  transform: translateY(-1px);
+}
+
+.variant-card:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.variant-card.is-active {
+  border-color: oklch(from var(--accent) l c h / 68%);
+  background: oklch(from var(--accent) 92% 0.045 h / 42%);
+  box-shadow:
+    inset 0 0 0 1px oklch(from var(--accent) l c h / 34%),
+    0 12px 30px oklch(from var(--accent) 50% c h / 16%);
+}
+
+:root[data-theme='dark'] .variant-card.is-active {
+  background: oklch(from var(--accent) 32% 0.055 h / 32%);
+}
+
+.variant-preview {
+  position: relative;
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background:
+    radial-gradient(circle at 50% 50%, oklch(100% 0 0 / 78%), transparent 30%),
+    linear-gradient(135deg, oklch(92% 0.025 250 / 58%), oklch(82% 0.045 240 / 28%));
+}
+
+:root[data-theme='dark'] .variant-preview {
+  background:
+    radial-gradient(circle at 50% 50%, oklch(100% 0 0 / 14%), transparent 30%),
+    linear-gradient(135deg, oklch(30% 0.05 250 / 54%), oklch(18% 0.05 260 / 48%));
+}
+
+.variant-preview > span {
+  position: relative;
+  display: block;
+  width: 36px;
+  height: 36px;
+}
+
+.variant-preview-classic > span {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, #0f172a 0 22%, #38bdf8 23% 34%, #f8fafc 35% 45%, transparent 46%),
+    conic-gradient(from 30deg, #e5edf8 0 18%, transparent 18% 33%, #e5edf8 33% 51%, transparent 51% 66%, #e5edf8 66% 84%, transparent 84%);
+}
+
+.variant-preview-orbit > span {
+  border: 2px solid #7dd3fc;
+  border-radius: 50%;
+  box-shadow: 0 0 0 8px oklch(75% 0.16 290 / 18%);
+}
+
+.variant-preview-orbit > span::before,
+.variant-preview-neon > span::before,
+.variant-preview-neon > span::after {
+  position: absolute;
+  content: '';
+}
+
+.variant-preview-orbit > span::before {
+  top: -6px;
+  right: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #facc15;
+  box-shadow: -26px 24px 0 #22d3ee, 23px 28px 0 #fb7185;
+}
+
+.variant-preview-flutter > span {
+  width: 30px;
+  height: 38px;
+  background:
+    linear-gradient(135deg, transparent 0 30%, #54c5f8 30% 51%, transparent 51%),
+    linear-gradient(45deg, transparent 0 30%, #29b6f6 30% 56%, transparent 56%),
+    linear-gradient(135deg, transparent 0 54%, #01579b 54% 74%, transparent 74%);
+  filter: drop-shadow(0 8px 14px oklch(54% 0.18 235 / 34%));
+}
+
+.variant-preview-neon > span {
+  border: 2px solid #a78bfa;
+  border-radius: 50%;
+  box-shadow: 0 0 16px #7c3aed;
+}
+
+.variant-preview-neon > span::before,
+.variant-preview-neon > span::after {
+  inset: 15px 4px;
+  border-radius: 999px;
+  background: #67e8f9;
+  box-shadow: 0 0 12px #22d3ee;
+}
+
+.variant-preview-neon > span::before {
+  transform: rotate(60deg);
+}
+
+.variant-preview-neon > span::after {
+  transform: rotate(-60deg);
+}
+
+.variant-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.variant-copy strong {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.variant-copy small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 15px;
+}
+
+@media (max-width: 420px) {
+  .variant-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @keyframes page-in {

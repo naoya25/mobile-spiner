@@ -16,6 +16,7 @@ export const resources = {
         back: '戻る',
         close: '閉じる',
         theme: 'テーマ',
+        spinner: 'スピナー',
         sensitivity: '感度',
         size: '大きさ',
         decay: '減衰度',
@@ -23,6 +24,24 @@ export const resources = {
         light: 'ライト',
         dark: 'ダーク',
         reset: '回転を止める'
+      },
+      variants: {
+        classic: {
+          name: 'Classic',
+          description: '金属ベアリングの定番'
+        },
+        orbit: {
+          name: 'Orbit',
+          description: '惑星が公転する軌道'
+        },
+        flutter: {
+          name: 'Flutter',
+          description: '公式ロゴをそのまま回す'
+        },
+        neon: {
+          name: 'Neon',
+          description: '光るリングとブレード'
+        }
       },
       metrics: {
         speed: '速度',
@@ -46,6 +65,7 @@ export const resources = {
         back: 'Back',
         close: 'Close',
         theme: 'Theme',
+        spinner: 'Spinner',
         sensitivity: 'Sensitivity',
         size: 'Size',
         decay: 'Decay',
@@ -53,6 +73,24 @@ export const resources = {
         light: 'Light',
         dark: 'Dark',
         reset: 'Stop spin'
+      },
+      variants: {
+        classic: {
+          name: 'Classic',
+          description: 'Standard metal bearing'
+        },
+        orbit: {
+          name: 'Orbit',
+          description: 'Planets around a center'
+        },
+        flutter: {
+          name: 'Flutter',
+          description: 'Official logo in motion'
+        },
+        neon: {
+          name: 'Neon',
+          description: 'Glowing ring and blades'
+        }
       },
       metrics: {
         speed: 'Speed',
