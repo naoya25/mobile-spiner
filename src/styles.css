@@ -479,16 +479,6 @@ button {
   box-shadow: -26px 24px 0 #22d3ee, 23px 28px 0 #fb7185;
 }
 
-.variant-preview-flutter > span {
-  width: 30px;
-  height: 38px;
-  background:
-    linear-gradient(135deg, transparent 0 30%, #54c5f8 30% 51%, transparent 51%),
-    linear-gradient(45deg, transparent 0 30%, #29b6f6 30% 56%, transparent 56%),
-    linear-gradient(135deg, transparent 0 54%, #01579b 54% 74%, transparent 74%);
-  filter: drop-shadow(0 8px 14px oklch(54% 0.18 235 / 34%));
-}
-
 .variant-preview-neon > span {
   border: 2px solid #a78bfa;
   border-radius: 50%;

@@ -35,10 +35,6 @@ export const resources = {
           name: 'Orbit',
           description: '惑星が公転する軌道'
         },
-        flutter: {
-          name: 'Flutter',
-          description: '公式ロゴをそのまま回す'
-        },
         neon: {
           name: 'Neon',
           description: '光るリングとブレード'
@@ -85,10 +81,6 @@ export const resources = {
         orbit: {
           name: 'Orbit',
           description: 'Planets around a center'
-        },
-        flutter: {
-          name: 'Flutter',
-          description: 'Official logo in motion'
         },
         neon: {
           name: 'Neon',

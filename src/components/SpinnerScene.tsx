@@ -1,13 +1,13 @@
-import { Environment, Float, PerspectiveCamera, useTexture } from '@react-three/drei';
+import { Environment, Float, PerspectiveCamera } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import type { MutableRefObject } from 'react';
 import { Suspense, useMemo, useRef } from 'react';
 import type { Group } from 'three';
-import { DoubleSide, Shape, Vector3 } from 'three';
-import flutterLogoUrl from '../assets/flutter-logo.svg?url';
+import { Box3, DoubleSide, Shape, ShapeGeometry, Vector3 } from 'three';
+import { SVGLoader } from 'three/examples/jsm/loaders/SVGLoader.js';
 import type { AnchorPosition } from '../hooks/useTwoFingerSpin';
-import { logoSvgDataUri, SPINNER_LOGO_MAP, type SpinnerLogo } from '../spinnerLogos';
+import { logoSvgMarkup, SPINNER_LOGO_MAP, type SpinnerLogo } from '../spinnerLogos';
 import type { SpinnerVariant } from '../spinnerVariants';
 
 interface SpinnerSceneProps {
@@ -79,8 +79,6 @@ function SpinnerBody({ variant }: { variant: SpinnerVariant }) {
   switch (variant) {
     case 'orbit':
       return <OrbitSpinner />;
-    case 'flutter':
-      return <FlutterSpinner />;
     case 'neon':
       return <NeonSpinner />;
     case 'classic':
@@ -92,17 +90,71 @@ function SpinnerBody({ variant }: { variant: SpinnerVariant }) {
   }
 }
 
-const LOGO_FIT_SCALE = 0.8;
+const LOGO_FIT_SIZE = 1.55;
 
-function LogoSpinner({ logo }: { logo: SpinnerLogo }) {
-  const texture = useTexture(logoSvgDataUri(logo));
+interface LogoMesh {
+  geometry: ShapeGeometry;
+  color: string;
+}
+
+// Parse SVG markup into flat ShapeGeometry meshes (one per fill). Vector geometry
+// renders identically on every engine — unlike an SVG rasterized to a WebGL texture,
+// which iOS/mobile WebKit mis-sizes.
+function parseSvgToMeshes(markup: string) {
+  const data = new SVGLoader().parse(markup);
+  const meshes: LogoMesh[] = [];
+  const bounds = new Box3();
+
+  for (const path of data.paths) {
+    const style = path.userData?.style as { fill?: string } | undefined;
+    const color = style?.fill;
+    if (!color || color === 'none') {
+      continue;
+    }
+    for (const shape of SVGLoader.createShapes(path)) {
+      const geometry = new ShapeGeometry(shape);
+      geometry.computeBoundingBox();
+      if (geometry.boundingBox) {
+        bounds.union(geometry.boundingBox);
+      }
+      meshes.push({ geometry, color });
+    }
+  }
+
+  const size = bounds.getSize(new Vector3());
+  const center = bounds.getCenter(new Vector3());
+  const fit = LOGO_FIT_SIZE / (Math.max(size.x, size.y) || 1);
+  return { meshes, center, fit };
+}
+
+function SvgLogoMeshes({ markup }: { markup: string }) {
+  const { meshes, center, fit } = useMemo(() => parseSvgToMeshes(markup), [markup]);
 
   return (
-    <mesh position={[0, 0, 0.04]} scale={LOGO_FIT_SCALE}>
-      <planeGeometry args={[2, 2]} />
-      <meshBasicMaterial map={texture} transparent toneMapped={false} />
-    </mesh>
+    // Negative Y scale flips SVG's y-down space to Three's y-up.
+    <group position={[0, 0, 0.04]} scale={[fit, -fit, fit]}>
+      <group position={[-center.x, -center.y, 0]}>
+        {meshes.map((mesh, index) => (
+          // renderOrder + depthWrite:false replays SVG paint order so overlapping
+          // coplanar fills (e.g. Flutter's folds) layer correctly without z-fighting.
+          <mesh key={index} geometry={mesh.geometry} renderOrder={index}>
+            <meshBasicMaterial
+              color={mesh.color}
+              toneMapped={false}
+              side={DoubleSide}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
+    </group>
   );
+}
+
+function LogoSpinner({ logo }: { logo: SpinnerLogo }) {
+  const markup = useMemo(() => logoSvgMarkup(logo), [logo]);
+
+  return <SvgLogoMeshes markup={markup} />;
 }
 
 // Solar system: angular speed ∝ 1 / orbitalPeriod (real Keplerian ordering — inner
@@ -341,17 +393,6 @@ function OrbitSpinner() {
         </group>
       ))}
     </group>
-  );
-}
-
-function FlutterSpinner() {
-  const flutterLogoTexture = useTexture(flutterLogoUrl);
-
-  return (
-    <mesh position={[0, 0, 0.04]}>
-      <planeGeometry args={[1.62, 1.96]} />
-      <meshBasicMaterial map={flutterLogoTexture} transparent toneMapped={false} />
-    </mesh>
   );
 }
 
