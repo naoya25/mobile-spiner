@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="mobile spiner icon">
+  <rect width="512" height="512" rx="112" fill="#111827"/>
+  <g transform="translate(256 256)">
+    <circle r="54" fill="#f8fafc"/>
+    <circle r="24" fill="#111827"/>
+    <g fill="#38bdf8">
+      <path d="M0-172c34 0 62 28 62 62S34-48 0-48s-62-28-62-62 28-62 62-62Z"/>
+      <path d="M149 86c-17 29-55 39-84 22s-39-55-22-84 55-39 84-22 39 55 22 84Z"/>
+      <path d="M-149 86c-17-29-7-67 22-84s67-7 84 22 7 67-22 84-67 7-84-22Z"/>
+    </g>
+    <path d="M0-104 90 52M0-104-90 52M90 52H-90" stroke="#f8fafc" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" opacity=".78"/>
+  </g>
+</svg>
