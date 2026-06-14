@@ -42,7 +42,8 @@ export const resources = {
         neon: {
           name: 'Neon',
           description: '光るリングとブレード'
-        }
+        },
+        logoHint: 'ロゴをそのまま回す'
       },
       metrics: {
         speed: '速度',
@@ -92,7 +93,8 @@ export const resources = {
         neon: {
           name: 'Neon',
           description: 'Glowing ring and blades'
-        }
+        },
+        logoHint: 'Spin the logo'
       },
       metrics: {
         speed: 'Speed',

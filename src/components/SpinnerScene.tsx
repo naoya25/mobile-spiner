@@ -2,11 +2,12 @@ import { Environment, Float, PerspectiveCamera, useTexture } from '@react-three/
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import type { MutableRefObject } from 'react';
-import { useMemo, useRef } from 'react';
+import { Suspense, useMemo, useRef } from 'react';
 import type { Group } from 'three';
 import { DoubleSide, Shape, Vector3 } from 'three';
 import flutterLogoUrl from '../assets/flutter-logo.svg?url';
 import type { AnchorPosition } from '../hooks/useTwoFingerSpin';
+import { logoSvgDataUri, SPINNER_LOGO_MAP, type SpinnerLogo } from '../spinnerLogos';
 import type { SpinnerVariant } from '../spinnerVariants';
 
 interface SpinnerSceneProps {
@@ -56,16 +57,19 @@ function SpinnerModel({
       groupRef.current.position.lerp(targetPositionRef.current, 1 - Math.exp(-8 * delta));
     }
 
+    const tilted = spinnerVariant === 'orbit' || spinnerVariant === 'neon';
     groupRef.current.rotation.z = angleRef.current;
-    groupRef.current.rotation.x = spinnerVariant === 'classic' || spinnerVariant === 'flutter' ? 0 : -0.34;
-    groupRef.current.rotation.y = spinnerVariant === 'classic' || spinnerVariant === 'flutter' ? 0 : 0.18;
+    groupRef.current.rotation.x = tilted ? -0.34 : 0;
+    groupRef.current.rotation.y = tilted ? 0.18 : 0;
     groupRef.current.scale.setScalar(spinnerSize);
   });
 
   return (
     <Float speed={1.1} rotationIntensity={0.05} floatIntensity={0.08}>
       <group ref={groupRef}>
-        <SpinnerBody variant={spinnerVariant} />
+        <Suspense fallback={null}>
+          <SpinnerBody variant={spinnerVariant} />
+        </Suspense>
       </group>
     </Float>
   );
@@ -80,9 +84,25 @@ function SpinnerBody({ variant }: { variant: SpinnerVariant }) {
     case 'neon':
       return <NeonSpinner />;
     case 'classic':
-    default:
       return <ClassicSpinner />;
+    default: {
+      const logo = SPINNER_LOGO_MAP[variant];
+      return logo ? <LogoSpinner logo={logo} /> : <ClassicSpinner />;
+    }
   }
+}
+
+const LOGO_FIT_SCALE = 0.8;
+
+function LogoSpinner({ logo }: { logo: SpinnerLogo }) {
+  const texture = useTexture(logoSvgDataUri(logo));
+
+  return (
+    <mesh position={[0, 0, 0.04]} scale={LOGO_FIT_SCALE}>
+      <planeGeometry args={[2, 2]} />
+      <meshBasicMaterial map={texture} transparent toneMapped={false} />
+    </mesh>
+  );
 }
 
 // Solar system: angular speed ∝ 1 / orbitalPeriod (real Keplerian ordering — inner

@@ -436,6 +436,19 @@ button {
   height: 36px;
 }
 
+.variant-preview-logo {
+  background:
+    radial-gradient(circle at 50% 38%, oklch(38% 0.05 250 / 80%), transparent 70%),
+    linear-gradient(135deg, oklch(20% 0.04 258), oklch(13% 0.035 262));
+}
+
+.variant-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px oklch(0% 0 0 / 35%));
+}
+
 .variant-preview-classic > span {
   border-radius: 50%;
   background:
