@@ -2,6 +2,7 @@ import { ArrowLeft, RotateCw, Settings, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpinnerScene } from './components/SpinnerScene';
+import { usePersistentState } from './hooks/usePersistentState';
 import { type ThemeMode, useThemeMode } from './hooks/useThemeMode';
 import { useTwoFingerSpin } from './hooks/useTwoFingerSpin';
 import { logoSvgDataUri, SPINNER_LOGO_MAP } from './spinnerLogos';
@@ -13,6 +14,14 @@ const defaultDecay = 1.35;
 const defaultSpinnerSize = 1;
 const defaultSpinnerVariant: SpinnerVariant = 'classic';
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isSpinnerVariant(value: unknown): value is SpinnerVariant {
+  return typeof value === 'string' && (spinnerVariants as readonly string[]).includes(value);
+}
+
 type Route = 'spinner' | 'settings';
 
 function getRoute(): Route {
@@ -22,10 +31,14 @@ function getRoute(): Route {
 export function App() {
   const { t } = useTranslation();
   const { themeMode, setThemeMode } = useThemeMode();
-  const [sensitivity, setSensitivity] = useState(defaultSensitivity);
-  const [decay, setDecay] = useState(defaultDecay);
-  const [spinnerSize, setSpinnerSize] = useState(defaultSpinnerSize);
-  const [spinnerVariant, setSpinnerVariant] = useState<SpinnerVariant>(defaultSpinnerVariant);
+  const [sensitivity, setSensitivity] = usePersistentState('sensitivity', defaultSensitivity, isFiniteNumber);
+  const [decay, setDecay] = usePersistentState('decay', defaultDecay, isFiniteNumber);
+  const [spinnerSize, setSpinnerSize] = usePersistentState('size', defaultSpinnerSize, isFiniteNumber);
+  const [spinnerVariant, setSpinnerVariant] = usePersistentState<SpinnerVariant>(
+    'variant',
+    defaultSpinnerVariant,
+    isSpinnerVariant
+  );
   const spin = useTwoFingerSpin({ sensitivity });
   const [route, setRoute] = useState<Route>(() => getRoute());
 
