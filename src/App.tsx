@@ -1,14 +1,22 @@
-import { Settings } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Settings } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpinnerScene } from './components/SpinnerScene';
 import { type ThemeMode, useThemeMode } from './hooks/useThemeMode';
 import { useTwoFingerSpin } from './hooks/useTwoFingerSpin';
+import { type SpinnerVariant, spinnerVariants } from './spinnerVariants';
 
 const themeModes: ThemeMode[] = ['system', 'light', 'dark'];
 const defaultSensitivity = 1;
 const defaultDecay = 1.35;
 const defaultSpinnerSize = 1;
+const defaultSpinnerVariant: SpinnerVariant = 'classic';
+
+type Route = 'spinner' | 'settings';
+
+function getRoute(): Route {
+  return window.location.hash === '#/settings' ? 'settings' : 'spinner';
+}
 
 export function App() {
   const { t } = useTranslation();
@@ -16,74 +24,41 @@ export function App() {
   const [sensitivity, setSensitivity] = useState(defaultSensitivity);
   const [decay, setDecay] = useState(defaultDecay);
   const [spinnerSize, setSpinnerSize] = useState(defaultSpinnerSize);
+  const [spinnerVariant, setSpinnerVariant] = useState<SpinnerVariant>(defaultSpinnerVariant);
   const spin = useTwoFingerSpin({ sensitivity });
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [route, setRoute] = useState<Route>(() => getRoute());
 
-  return (
-    <main
-      className="app-shell"
-      onPointerDown={spin.onPointerDown}
-      onPointerMove={spin.onPointerMove}
-      onPointerUp={spin.onPointerUp}
-      onPointerCancel={spin.onPointerUp}
-      onContextMenu={(event) => event.preventDefault()}
-    >
-      <section className="stage" aria-label={t('appName')}>
-        <SpinnerScene
-          angleRef={spin.angleRef}
-          angularVelocityRef={spin.angularVelocityRef}
-          decay={decay}
-          anchorPosition={spin.anchorPosition}
-          activeTouchCount={spin.activeTouchCount}
-          spinnerSize={spinnerSize}
-        />
-      </section>
+  useEffect(() => {
+    const handleHashChange = () => setRoute(getRoute());
 
-      <header className="top-bar" onPointerDown={(event) => event.stopPropagation()}>
-        <h1 className="app-title">{t('appName')}</h1>
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
-        <button
-          className="settings-button"
-          type="button"
-          aria-label={t('controls.settings')}
-          aria-expanded={isSettingsOpen}
-          aria-controls="settings-panel"
-          onClick={() => setIsSettingsOpen((current) => !current)}
-        >
-          <Settings aria-hidden="true" size={18} strokeWidth={1.8} />
-        </button>
-      </header>
+  const navigateToSettings = () => {
+    window.location.hash = '/settings';
+  };
 
-      {isSettingsOpen && (
-        <aside
-          id="settings-panel"
-          className="settings-panel"
-          aria-label={t('controls.settings')}
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          <div className="settings-header">
-            <h2>{t('controls.settings')}</h2>
-            <button
-              className="icon-button"
-              type="button"
-              aria-label={t('controls.close')}
-              onClick={() => setIsSettingsOpen(false)}
-            >
-              x
-            </button>
-          </div>
+  const navigateToSpinner = () => {
+    window.location.hash = '/';
+  };
 
-          <div className="metrics-grid">
-            <div className="metric">
-              <span>{t('metrics.speed')}</span>
-              <strong>{spin.speed.toFixed(1)}</strong>
-            </div>
-            <div className="metric">
-              <span>{t('metrics.touch')}</span>
-              <strong>{spin.activeTouchCount}</strong>
-            </div>
-          </div>
+  if (route === 'settings') {
+    return (
+      <main className="settings-page">
+        <header className="settings-page-header">
+          <button
+            className="icon-button"
+            type="button"
+            aria-label={t('controls.back')}
+            onClick={navigateToSpinner}
+          >
+            <ArrowLeft aria-hidden="true" size={18} strokeWidth={1.8} />
+          </button>
+          <h1>{t('controls.settings')}</h1>
+        </header>
 
+        <section className="settings-content" aria-label={t('controls.settings')}>
           <div>
             <p className="field-label">{t('controls.theme')}</p>
             <div className="theme-switcher" role="group" aria-label={t('controls.theme')}>
@@ -95,6 +70,29 @@ export function App() {
                   onClick={() => setThemeMode(mode)}
                 >
                   {t(`controls.${mode}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="field-label">{t('controls.spinner')}</p>
+            <div className="variant-grid" role="group" aria-label={t('controls.spinner')}>
+              {spinnerVariants.map((variant) => (
+                <button
+                  key={variant}
+                  className={variant === spinnerVariant ? 'variant-card is-active' : 'variant-card'}
+                  type="button"
+                  aria-pressed={variant === spinnerVariant}
+                  onClick={() => setSpinnerVariant(variant)}
+                >
+                  <span className={`variant-preview variant-preview-${variant}`} aria-hidden="true">
+                    <span />
+                  </span>
+                  <span className="variant-copy">
+                    <strong>{t(`variants.${variant}.name`)}</strong>
+                    <small>{t(`variants.${variant}.description`)}</small>
+                  </span>
                 </button>
               ))}
             </div>
@@ -144,12 +142,44 @@ export function App() {
               onChange={(event) => setDecay(Number(event.currentTarget.value))}
             />
           </label>
+        </section>
+      </main>
+    );
+  }
 
-          <button className="secondary-button" type="button" onClick={spin.stopSpin}>
-            {t('controls.reset')}
-          </button>
-        </aside>
-      )}
+  return (
+    <main
+      className="app-shell"
+      onPointerDown={spin.onPointerDown}
+      onPointerMove={spin.onPointerMove}
+      onPointerUp={spin.onPointerUp}
+      onPointerCancel={spin.onPointerUp}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <section className="stage" aria-label={t('appName')}>
+        <SpinnerScene
+          angleRef={spin.angleRef}
+          angularVelocityRef={spin.angularVelocityRef}
+          decay={decay}
+          anchorPosition={spin.anchorPosition}
+          activeTouchCount={spin.activeTouchCount}
+          spinnerSize={spinnerSize}
+          spinnerVariant={spinnerVariant}
+        />
+      </section>
+
+      <header className="top-bar" onPointerDown={(event) => event.stopPropagation()}>
+        <h1 className="app-title">{t('appName')}</h1>
+
+        <button
+          className="settings-button"
+          type="button"
+          aria-label={t('controls.settings')}
+          onClick={navigateToSettings}
+        >
+          <Settings aria-hidden="true" size={18} strokeWidth={1.8} />
+        </button>
+      </header>
     </main>
   );
 }

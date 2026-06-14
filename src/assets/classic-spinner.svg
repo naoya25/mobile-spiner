@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Classic fidget spinner">
+  <path
+    fill="#245f62"
+    d="M256 154c26 0 50 10 68 27l38-22a78 78 0 1 1 35 61l-38 22a101 101 0 0 1 0 28l38 22a78 78 0 1 1-35 61l-38-22a101 101 0 0 1-136 0l-38 22a78 78 0 1 1-35-61l38-22a101 101 0 0 1 0-28l-38-22a78 78 0 1 1 35-61l38 22c18-17 42-27 68-27Z"
+  />
+  <circle cx="256" cy="256" r="48" fill="#ffe24a" />
+  <circle cx="256" cy="256" r="35" fill="none" stroke="#d4b72a" stroke-width="8" />
+  <g fill="#9ad9ce" stroke="#4c9a90" stroke-width="8">
+    <circle cx="256" cy="100" r="45" />
+    <circle cx="121" cy="334" r="45" />
+    <circle cx="391" cy="334" r="45" />
+  </g>
+  <g fill="none" stroke="#4c9a90" stroke-width="8">
+    <circle cx="256" cy="100" r="25" />
+    <circle cx="121" cy="334" r="25" />
+    <circle cx="391" cy="334" r="25" />
+  </g>
+</svg>
