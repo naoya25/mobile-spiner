@@ -23,7 +23,8 @@ export const resources = {
         system: 'システム',
         light: 'ライト',
         dark: 'ダーク',
-        reset: '回転を止める'
+        reset: '回転を止める',
+        spin: '回す'
       },
       variants: {
         classic: {
@@ -72,7 +73,8 @@ export const resources = {
         system: 'System',
         light: 'Light',
         dark: 'Dark',
-        reset: 'Stop spin'
+        reset: 'Stop spin',
+        spin: 'Spin'
       },
       variants: {
         classic: {

@@ -12,8 +12,10 @@
   "dependencies": {
     "@react-three/drei": "latest",
     "@react-three/fiber": "latest",
+    "@react-three/postprocessing": "^3.0.4",
     "i18next": "latest",
     "lucide-react": "^1.18.0",
+    "postprocessing": "^6.39.1",
     "react": "latest",
     "react-dom": "latest",
     "react-i18next": "latest",

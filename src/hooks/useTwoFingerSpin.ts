@@ -24,6 +24,7 @@ interface UseTwoFingerSpinResult {
   onPointerMove: (event: React.PointerEvent<HTMLElement>) => void;
   onPointerUp: (event: React.PointerEvent<HTMLElement>) => void;
   stopSpin: () => void;
+  boostSpin: () => void;
 }
 
 interface UseTwoFingerSpinOptions {
@@ -32,6 +33,10 @@ interface UseTwoFingerSpinOptions {
 
 const minimumRadius = 38;
 const velocityLimit = 34;
+// Each tap of the spin button adds this much angular velocity; rapid taps stack up
+// faster than `decay` bleeds them off, so the spinner keeps accelerating.
+const boostImpulse = 13;
+const boostVelocityLimit = 120;
 const initialAnchorPosition: AnchorPosition = { x: 0, y: 0 };
 const centerAnchorPosition: AnchorPosition = { x: 0, y: 0 };
 
@@ -246,6 +251,17 @@ export function useTwoFingerSpin({ sensitivity }: UseTwoFingerSpinOptions): UseT
         setSpeed(0);
         setAnchorPosition(centerAnchorPosition);
         setInteractionMode('idle');
+      },
+      boostSpin: () => {
+        const current = angularVelocityRef.current;
+        const direction = current < -0.05 ? -1 : 1;
+        const next = current + direction * boostImpulse;
+        angularVelocityRef.current = Math.max(
+          -boostVelocityLimit,
+          Math.min(boostVelocityLimit, next)
+        );
+        updateSpeed();
+        setInteractionMode('spinning');
       }
     }),
     [activeTouchCount, anchorPosition, interactionMode, sensitivity, speed]

@@ -1,4 +1,4 @@
-import { ArrowLeft, Settings } from 'lucide-react';
+import { ArrowLeft, RotateCw, Settings, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SpinnerScene } from './components/SpinnerScene';
@@ -180,6 +180,33 @@ export function App() {
           <Settings aria-hidden="true" size={18} strokeWidth={1.8} />
         </button>
       </header>
+
+      <div className="spin-bar">
+        <button
+          className="stop-button"
+          type="button"
+          aria-label={t('controls.reset')}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            spin.stopSpin();
+          }}
+        >
+          <Square aria-hidden="true" size={18} strokeWidth={2.2} />
+        </button>
+
+        <button
+          className="spin-button"
+          type="button"
+          aria-label={t('controls.spin')}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+            spin.boostSpin();
+            navigator.vibrate?.(12);
+          }}
+        >
+          <RotateCw aria-hidden="true" size={22} strokeWidth={2.2} />
+        </button>
+      </div>
     </main>
   );
 }

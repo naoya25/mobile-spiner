@@ -156,6 +156,94 @@ button {
   outline-offset: 2px;
 }
 
+.spin-bar {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: max(28px, env(safe-area-inset-bottom));
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.spin-bar button {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.spin-button {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: pointer;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition:
+    transform 120ms var(--ease-out-quart),
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.spin-button:hover {
+  color: var(--text);
+  background: var(--surface-strong);
+}
+
+.spin-button:active {
+  transform: scale(0.93);
+  background: var(--surface-strong);
+}
+
+.spin-button svg {
+  transition: transform 320ms var(--ease-out-quart);
+}
+
+.spin-button:active svg {
+  transform: rotate(160deg);
+}
+
+.stop-button {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  background: var(--surface);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition:
+    background-color 100ms ease,
+    transform 140ms var(--ease-out-quart);
+}
+
+.stop-button:hover {
+  background: var(--surface-strong);
+}
+
+.stop-button:active {
+  transform: scale(0.92);
+}
+
+.spin-button:focus-visible,
+.stop-button:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
 .settings-page {
   width: 100%;
   height: 100%;

@@ -1,10 +1,10 @@
 import { Environment, Float, PerspectiveCamera, useTexture } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import type { MutableRefObject } from 'react';
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import type { Group } from 'three';
-import { Vector3 } from 'three';
-import classicSpinnerUrl from '../assets/classic-spinner.svg?url';
+import { DoubleSide, Shape, Vector3 } from 'three';
 import flutterLogoUrl from '../assets/flutter-logo.svg?url';
 import type { AnchorPosition } from '../hooks/useTwoFingerSpin';
 import type { SpinnerVariant } from '../spinnerVariants';
@@ -85,73 +85,242 @@ function SpinnerBody({ variant }: { variant: SpinnerVariant }) {
   }
 }
 
-const lobes = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3];
-const orbitPlanets = [
-  { rotation: 0, radius: 0.22, color: '#facc15', emissive: '#854d0e' },
-  { rotation: (Math.PI * 2) / 3, radius: 0.18, color: '#22d3ee', emissive: '#155e75' },
-  { rotation: (Math.PI * 4) / 3, radius: 0.18, color: '#fb7185', emissive: '#881337' }
+// Solar system: angular speed ∝ 1 / orbitalPeriod (real Keplerian ordering — inner
+// planets revolve fast, outer ones drift slowly). `period` is in Earth-years, `orbit`
+// is the visual orbital radius, `size` the rendered planet radius.
+const ORBIT_TIME_SCALE = 0.5;
+const ORBIT_FIT_SCALE = 0.52;
+const ORBIT_PLANETS = [
+  { name: 'mercury', color: '#9ca3af', emissive: '#3f3f46', period: 0.241, orbit: 0.34, size: 0.038, phase: 0.4, ring: false },
+  { name: 'venus', color: '#e6c178', emissive: '#7c5a1e', period: 0.615, orbit: 0.46, size: 0.056, phase: 2.1, ring: false },
+  { name: 'earth', color: '#3b82f6', emissive: '#0b3b8c', period: 1.0, orbit: 0.59, size: 0.058, phase: 4.0, ring: false },
+  { name: 'mars', color: '#d1542f', emissive: '#7a2410', period: 1.881, orbit: 0.72, size: 0.046, phase: 5.5, ring: false },
+  { name: 'jupiter', color: '#d8a878', emissive: '#6b4a28', period: 11.86, orbit: 0.94, size: 0.11, phase: 1.0, ring: false },
+  { name: 'saturn', color: '#e3c98c', emissive: '#7a6024', period: 29.46, orbit: 1.16, size: 0.092, phase: 3.2, ring: true },
+  { name: 'uranus', color: '#8fe0e6', emissive: '#1d5e66', period: 84.0, orbit: 1.33, size: 0.07, phase: 0.2, ring: false },
+  { name: 'neptune', color: '#4060d8', emissive: '#101f6b', period: 164.8, orbit: 1.47, size: 0.068, phase: 5.0, ring: false },
+  { name: 'pluto', color: '#b9a896', emissive: '#4a3f33', period: 248.0, orbit: 1.6, size: 0.034, phase: 2.6, ring: false }
 ] as const;
-function Bearing({ accent = '#38bdf8' }: { accent?: string }) {
+
+const NEON_LOBES = [0, (Math.PI * 2) / 3, (Math.PI * 4) / 3];
+const NEON_FIT_SCALE = 0.5;
+
+const CLASSIC_LOBE_DISTANCE = 1.04;
+const CLASSIC_LOBE_RADIUS = 0.48;
+const CLASSIC_HUB_RADIUS = 0.38;
+const CLASSIC_WAIST_INSET = 0.26;
+const CLASSIC_LOBE_ANGLES = [
+  Math.PI / 2,
+  Math.PI / 2 + (Math.PI * 2) / 3,
+  Math.PI / 2 + (Math.PI * 4) / 3
+];
+
+// Tri-lobe fidget-spinner outline: an outer half-circle cap per lobe, joined by
+// concave waists (quadratic curves that dip toward the hub) to get the classic
+// 3-pointed silhouette with negative space between the arms.
+function buildClassicBodyShape() {
+  const shape = new Shape();
+  const distance = CLASSIC_LOBE_DISTANCE;
+  const radius = CLASSIC_LOBE_RADIUS;
+
+  CLASSIC_LOBE_ANGLES.forEach((angle, index) => {
+    const cx = Math.cos(angle) * distance;
+    const cy = Math.sin(angle) * distance;
+    const startAngle = angle - Math.PI / 2;
+    const endAngle = angle + Math.PI / 2;
+
+    if (index === 0) {
+      shape.moveTo(cx + Math.cos(startAngle) * radius, cy + Math.sin(startAngle) * radius);
+    }
+
+    shape.absarc(cx, cy, radius, startAngle, endAngle, false);
+
+    const nextAngle = CLASSIC_LOBE_ANGLES[(index + 1) % CLASSIC_LOBE_ANGLES.length] ?? angle;
+    const nextStart = nextAngle - Math.PI / 2;
+    const gapAngle = angle + Math.PI / 3;
+    shape.quadraticCurveTo(
+      Math.cos(gapAngle) * CLASSIC_WAIST_INSET,
+      Math.sin(gapAngle) * CLASSIC_WAIST_INSET,
+      Math.cos(nextAngle) * distance + Math.cos(nextStart) * radius,
+      Math.sin(nextAngle) * distance + Math.sin(nextStart) * radius
+    );
+  });
+
+  shape.closePath();
+  return shape;
+}
+
+function ClassicLobeBearing() {
   return (
-    <>
-      <mesh position={[0, 0, -0.035]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.64, 0.64, 0.16, 96]} />
-        <meshStandardMaterial color="#f8fafc" metalness={0.92} roughness={0.16} />
+    <group>
+      <mesh position={[0, 0, 0.12]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.31, 0.31, 0.13, 64]} />
+        <meshStandardMaterial color="#0b1220" metalness={0.62} roughness={0.42} />
       </mesh>
-      <mesh position={[0, 0, 0.07]} castShadow receiveShadow>
-        <torusGeometry args={[0.43, 0.085, 28, 96]} />
-        <meshStandardMaterial color={accent} metalness={0.95} roughness={0.12} />
+      <mesh position={[0, 0, 0.2]}>
+        <torusGeometry args={[0.3, 0.04, 24, 96]} />
+        <meshStandardMaterial
+          color="#22c55e"
+          emissive="#22c55e"
+          emissiveIntensity={1.6}
+          metalness={0.3}
+          roughness={0.28}
+          toneMapped={false}
+        />
       </mesh>
-      <mesh position={[0, 0, 0.105]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[0.25, 0.25, 0.14, 80]} />
-        <meshStandardMaterial color="#111827" metalness={0.8} roughness={0.2} />
+      <mesh position={[0, 0, 0.19]}>
+        <torusGeometry args={[0.2, 0.013, 16, 80]} />
+        <meshStandardMaterial color="#94a3b8" metalness={0.95} roughness={0.26} />
       </mesh>
-    </>
+      <mesh position={[0, 0, 0.19]}>
+        <torusGeometry args={[0.12, 0.013, 16, 64]} />
+        <meshStandardMaterial color="#cbd5e1" metalness={0.95} roughness={0.22} />
+      </mesh>
+      <mesh position={[0, 0, 0.2]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.055, 0.055, 0.08, 32]} />
+        <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.2} />
+      </mesh>
+    </group>
+  );
+}
+
+function ClassicCenterHub() {
+  return (
+    <group>
+      <mesh position={[0, 0, 0.13]} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[CLASSIC_HUB_RADIUS, CLASSIC_HUB_RADIUS, 0.17, 72]} />
+        <meshStandardMaterial color="#4aa6d6" metalness={0.96} roughness={0.18} envMapIntensity={1.3} />
+      </mesh>
+      <mesh position={[0, 0, 0.23]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.27, 0.31, 0.07, 72]} />
+        <meshStandardMaterial color="#5bb6e6" metalness={0.9} roughness={0.15} envMapIntensity={1.4} />
+      </mesh>
+      <mesh position={[0, 0, 0.22]}>
+        <torusGeometry args={[CLASSIC_HUB_RADIUS - 0.02, 0.02, 20, 96]} />
+        <meshStandardMaterial color="#cbd5e1" metalness={0.95} roughness={0.2} />
+      </mesh>
+    </group>
   );
 }
 
 function ClassicSpinner() {
-  const classicSpinnerTexture = useTexture(classicSpinnerUrl);
+  const bodyShape = useMemo(() => buildClassicBodyShape(), []);
 
   return (
-    <mesh position={[0, 0, 0.04]}>
-      <planeGeometry args={[2.7, 2.7]} />
-      <meshBasicMaterial map={classicSpinnerTexture} transparent toneMapped={false} />
-    </mesh>
+    <group scale={0.58}>
+      <mesh position={[0, 0, -0.08]} castShadow receiveShadow>
+        <extrudeGeometry
+          args={[
+            bodyShape,
+            {
+              depth: 0.16,
+              bevelEnabled: true,
+              bevelThickness: 0.05,
+              bevelSize: 0.05,
+              bevelSegments: 5,
+              steps: 1,
+              curveSegments: 72
+            }
+          ]}
+        />
+        <meshStandardMaterial color="#3f9fd1" metalness={0.95} roughness={0.24} envMapIntensity={1.2} />
+      </mesh>
+      {CLASSIC_LOBE_ANGLES.map((angle) => (
+        <group
+          key={angle}
+          position={[
+            Math.cos(angle) * CLASSIC_LOBE_DISTANCE,
+            Math.sin(angle) * CLASSIC_LOBE_DISTANCE,
+            0
+          ]}
+        >
+          <ClassicLobeBearing />
+        </group>
+      ))}
+      <ClassicCenterHub />
+    </group>
+  );
+}
+
+function Sun() {
+  return (
+    <group>
+      <pointLight position={[0, 0, 0]} intensity={2.6} color="#fff0c8" distance={9} decay={1.1} />
+      <mesh>
+        <sphereGeometry args={[0.2, 48, 32]} />
+        <meshStandardMaterial color="#ffd24a" emissive="#ffae1a" emissiveIntensity={1.7} toneMapped={false} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[0.27, 32, 24]} />
+        <meshBasicMaterial color="#ffcf6b" transparent opacity={0.16} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function OrbitPlanet({ planet }: { planet: (typeof ORBIT_PLANETS)[number] }) {
+  return (
+    <group position={[planet.orbit, 0, 0]}>
+      <mesh castShadow receiveShadow>
+        <sphereGeometry args={[planet.size, 32, 24]} />
+        <meshStandardMaterial
+          color={planet.color}
+          emissive={planet.emissive}
+          emissiveIntensity={0.4}
+          roughness={0.72}
+          metalness={0.1}
+        />
+      </mesh>
+      {planet.ring && (
+        <mesh rotation={[Math.PI / 2 - 0.5, 0, 0.32]}>
+          <ringGeometry args={[planet.size * 1.4, planet.size * 2.4, 64]} />
+          <meshStandardMaterial
+            color="#e3d3a0"
+            emissive="#5a4a20"
+            emissiveIntensity={0.32}
+            side={DoubleSide}
+            transparent
+            opacity={0.85}
+            roughness={0.8}
+          />
+        </mesh>
+      )}
+    </group>
   );
 }
 
 function OrbitSpinner() {
+  const pivotRefs = useRef<(Group | null)[]>([]);
+
+  useFrame((_, delta) => {
+    ORBIT_PLANETS.forEach((planet, index) => {
+      const pivot = pivotRefs.current[index];
+      if (pivot) {
+        pivot.rotation.z += (ORBIT_TIME_SCALE / planet.period) * delta;
+      }
+    });
+  });
+
   return (
-    <>
-      <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
-        <torusGeometry args={[1.28, 0.018, 12, 160]} />
-        <meshStandardMaterial color="#7dd3fc" emissive="#075985" emissiveIntensity={0.45} metalness={0.4} roughness={0.24} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0.72, 0]} castShadow receiveShadow>
-        <torusGeometry args={[1.68, 0.014, 12, 160]} />
-        <meshStandardMaterial color="#c084fc" emissive="#581c87" emissiveIntensity={0.35} metalness={0.32} roughness={0.28} />
-      </mesh>
-      {orbitPlanets.map((planet) => (
-        <group key={planet.rotation} rotation-z={planet.rotation}>
-          <mesh position={[0, 1.46, 0.08]} castShadow receiveShadow>
-            <sphereGeometry args={[planet.radius, 48, 32]} />
-            <meshStandardMaterial
-              color={planet.color}
-              emissive={planet.emissive}
-              emissiveIntensity={0.32}
-              metalness={0.28}
-              roughness={0.18}
-            />
+    <group scale={ORBIT_FIT_SCALE}>
+      <Sun />
+      {ORBIT_PLANETS.map((planet, index) => (
+        <group key={planet.name}>
+          <mesh>
+            <torusGeometry args={[planet.orbit, 0.0035, 8, 192]} />
+            <meshBasicMaterial color="#56689a" transparent opacity={0.4} depthWrite={false} />
           </mesh>
+          <group
+            ref={(element) => {
+              pivotRefs.current[index] = element;
+            }}
+            rotation-z={planet.phase}
+          >
+            <OrbitPlanet planet={planet} />
+          </group>
         </group>
       ))}
-      <mesh position={[0, 0, 0.11]} castShadow receiveShadow>
-        <sphereGeometry args={[0.34, 64, 32]} />
-        <meshStandardMaterial color="#fde68a" emissive="#f59e0b" emissiveIntensity={0.28} metalness={0.2} roughness={0.2} />
-      </mesh>
-      <Bearing accent="#facc15" />
-    </>
+    </group>
   );
 }
 
@@ -166,27 +335,47 @@ function FlutterSpinner() {
   );
 }
 
+function NeonTube({ color, intensity = 2.7 }: { color: string; intensity?: number }) {
+  return (
+    <meshStandardMaterial
+      color="#05070b"
+      emissive={color}
+      emissiveIntensity={intensity}
+      toneMapped={false}
+      roughness={0.4}
+      metalness={0.1}
+    />
+  );
+}
+
 function NeonSpinner() {
   return (
-    <>
-      {lobes.map((rotation) => (
+    <group scale={NEON_FIT_SCALE}>
+      {NEON_LOBES.map((rotation) => (
         <group key={rotation} rotation-z={rotation}>
-          <mesh position={[0, 1.08, 0.02]} castShadow receiveShadow>
-            <capsuleGeometry args={[0.18, 1.32, 18, 48]} />
-            <meshStandardMaterial color="#111827" emissive="#22d3ee" emissiveIntensity={0.26} metalness={0.84} roughness={0.18} />
+          <mesh position={[0, 0.64, 0]}>
+            <capsuleGeometry args={[0.052, 1.0, 16, 32]} />
+            <NeonTube color="#22d3ee" />
           </mesh>
-          <mesh position={[0, 1.68, 0.07]} castShadow receiveShadow>
-            <sphereGeometry args={[0.23, 48, 32]} />
-            <meshStandardMaterial color="#67e8f9" emissive="#22d3ee" emissiveIntensity={0.8} metalness={0.5} roughness={0.12} />
+          <mesh position={[0, 1.24, 0]}>
+            <torusGeometry args={[0.24, 0.05, 24, 96]} />
+            <NeonTube color="#34e6ff" intensity={3} />
+          </mesh>
+          <mesh position={[0, 1.24, 0]}>
+            <sphereGeometry args={[0.075, 24, 18]} />
+            <NeonTube color="#a5f3ff" intensity={3.2} />
           </mesh>
         </group>
       ))}
-      <mesh position={[0, 0, 0.03]} castShadow receiveShadow>
-        <torusGeometry args={[1.08, 0.05, 20, 128]} />
-        <meshStandardMaterial color="#a78bfa" emissive="#7c3aed" emissiveIntensity={0.48} metalness={0.62} roughness={0.14} />
+      <mesh>
+        <torusGeometry args={[0.36, 0.06, 28, 128]} />
+        <NeonTube color="#f472b6" intensity={3} />
       </mesh>
-      <Bearing accent="#a78bfa" />
-    </>
+      <mesh>
+        <torusGeometry args={[0.2, 0.04, 24, 96]} />
+        <NeonTube color="#c084fc" intensity={2.8} />
+      </mesh>
+    </group>
   );
 }
 
@@ -219,6 +408,11 @@ export function SpinnerScene({
         <meshStandardMaterial color="#0f172a" roughness={0.7} metalness={0.05} transparent opacity={0.24} />
       </mesh>
       <Environment preset="city" />
+      {spinnerVariant === 'neon' && (
+        <EffectComposer>
+          <Bloom intensity={1.5} luminanceThreshold={0.2} luminanceSmoothing={0.65} mipmapBlur radius={0.8} />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }
